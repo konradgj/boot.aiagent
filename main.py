@@ -5,7 +5,8 @@ from google import genai
 from google.genai import types
 
 def main():
-    args = sys.argv[1:]
+    verbose = "--verbose" in sys.argv
+    args = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
     
     if not args:
         print('No prompt provided. Exiting')
@@ -24,8 +25,10 @@ def main():
     response = client.models.generate_content(model=model, contents=messages)   
 
     print(response.text)
-    print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-    print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+    if verbose:
+        print(f"User prompt: {prompt}")
+        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
 if __name__ == "__main__":
     main()
