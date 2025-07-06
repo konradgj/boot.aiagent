@@ -31,26 +31,30 @@ def main():
         ]
     )
 
-    response = client.models.generate_content(
-        model=model,
-        contents=messages,
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt, tools=[available_functions]
-        ),
-    )
+    for i in range(20):
+        response = client.models.generate_content(
+            model=model,
+            contents=messages,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt, tools=[available_functions]
+            ),
+        )
+        for candidate in response.candidates:
+            messages.append(candidate.content)
 
-    if verbose:
-        print(f"User prompt: {prompt}")
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-    if not response.function_calls:
-        return response.text
-    for fcp in response.function_calls:
-        res = call_function(fcp, verbose)
-        if not res.parts[0].function_response.response:
-            raise Exception("Error: function response missing")
         if verbose:
-            print(f"-> {res.parts[0].function_response.response}")
+            print(f"User prompt: {prompt}")
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        if not response.function_calls:
+            return response.text
+        for fcp in response.function_calls:
+            res = call_function(fcp, verbose)
+            messages.append(res)
+            if not res.parts[0].function_response.response:
+                raise Exception("Error: function response missing")
+            if verbose:
+                print(f"-> {res.parts[0].function_response.response}")
 
 
 def call_function(function_call_part, verbose=False):
@@ -98,4 +102,5 @@ def call_function(function_call_part, verbose=False):
 
 
 if __name__ == "__main__":
-    main()
+    res = main()
+    print(res)
