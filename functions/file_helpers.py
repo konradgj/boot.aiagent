@@ -1,4 +1,5 @@
 import os
+import subprocess
 from google.genai import types
 
 max_chars = 10000
@@ -70,6 +71,38 @@ def write_file(working_directory, file_path, content):
         return f"Error: writine to file: {e}"
 
 
+def run_python_file(working_directory, file_path, args=None):
+    abs_working = os.path.abspath(working_directory)
+    target_file = os.path.abspath(os.path.join(abs_working, file_path))
+    if not target_file.startswith(abs_working):
+        return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
+
+    if not os.path.exists(target_file):
+        return f'Error: File "{file_path}" not found.'
+    if not target_file.endswith(".py"):
+        return f"Error: '{file_path}' is not a Python file."
+    try:
+        commands = ["python", target_file]
+        if args:
+            commands.extend(args)
+        result = subprocess.run(
+            commands,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=abs_working,
+        )
+    except Exception as e:
+        return f"Error: executing Python file: {e}"
+
+    output = []
+    output.append(f"STDOUT: {result.stdout}")
+    output.append(f"STRERR: {result.stderr}")
+    if result.returncode != 0:
+        output.append(f"Process exited with code {result.returncode}")
+    return "\n".join(output) if output else "No output produced."
+
+
 schema_get_files_info = types.FunctionDeclaration(
     name="get_files_info",
     description="Lists files in the specified directory along with their sizes, constrained to the working directory.",
@@ -94,6 +127,7 @@ schema_get_file_content = types.FunctionDeclaration(
                 description="The path to the file, relative to the working directory.",
             ),
         },
+        required=["file_path"],
     ),
 )
 schema_write_file = types.FunctionDeclaration(
@@ -106,9 +140,32 @@ schema_write_file = types.FunctionDeclaration(
                 type=types.Type.STRING,
                 description="The path to the file, relative to the working directory.",
             ),
-            "write_file": types.Schema(
+            "content": types.Schema(
                 type=types.Type.STRING, description="The content to write to the file"
             ),
         },
+        required=["file_path", "content"],
+    ),
+)
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Run the python file at the given file_path with optional agruments.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the file, relative to the working directory.",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(
+                    type=types.Type.STRING,
+                    description="Optional arguments to pass to the Python file.",
+                ),
+                description="Optional arguments to pass to the Python file.",
+            ),
+        },
+        required=["file_path"],
     ),
 )
