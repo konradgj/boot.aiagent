@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from prompts import system_prompt
+import functions.file_helpers as f_helper
 
 
 def main():
@@ -21,18 +22,30 @@ def main():
     model = "gemini-2.0-flash-001"
     prompt = " ".join(args)
     messages = [types.Content(role="user", parts=[types.Part(text=prompt)])]
+    available_functions = types.Tool(
+        function_declarations=[
+            f_helper.schema_get_files_info,
+            # f_helper.schema_get_file_content,
+            # f_helper.schema_write_file,
+        ]
+    )
 
     response = client.models.generate_content(
         model=model,
         contents=messages,
-        config=types.GenerateContentConfig(system_instruction=system_prompt),
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt, tools=[available_functions]
+        ),
     )
 
-    print(response.text)
     if verbose:
         print(f"User prompt: {prompt}")
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+    if not response.function_calls:
+        return response.text
+    for fcp in response.function_calls:
+        print(f"Calling function: {fcp.name}({fcp.args})")
 
 
 if __name__ == "__main__":

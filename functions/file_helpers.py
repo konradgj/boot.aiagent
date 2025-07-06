@@ -1,4 +1,7 @@
 import os
+from google.genai import types
+
+max_chars = 10000
 
 
 def get_files_info(working_directory, directory=None):
@@ -35,7 +38,6 @@ def get_file_content(working_directory, file_path):
         return f'Error: File not found or is not a regular file: "{file_path}"'
 
     try:
-        max_chars = 10000
         with open(target_file, "r") as f:
             file_content = f.read(max_chars)
             if os.path.getsize(target_file) > max_chars:
@@ -66,3 +68,47 @@ def write_file(working_directory, file_path, content):
         )
     except Exception as e:
         return f"Error: writine to file: {e}"
+
+
+schema_get_files_info = types.FunctionDeclaration(
+    name="get_files_info",
+    description="Lists files in the specified directory along with their sizes, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "directory": types.Schema(
+                type=types.Type.STRING,
+                description="The directory to list files from, relative to the working directory. If not provided, lists files in the working directory itself.",
+            ),
+        },
+    ),
+)
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description=f"Returns the contents of the file, contrained to max {max_chars} characters",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the file, relative to the working directory.",
+            ),
+        },
+    ),
+)
+schema_write_file = types.FunctionDeclaration(
+    name="write_file",
+    description="Writes content to the given file_path",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the file, relative to the working directory.",
+            ),
+            "write_file": types.Schema(
+                type=types.Type.STRING, description="The content to write to the file"
+            ),
+        },
+    ),
+)
