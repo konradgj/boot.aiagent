@@ -1,5 +1,6 @@
 import unittest
 from functions.file_helpers import get_files_info, get_file_content, write_file
+from functions.run_python import run_python_file
 
 
 class FilesTest(unittest.TestCase):
@@ -70,6 +71,26 @@ class FilesTest(unittest.TestCase):
         res = write_file("calculator", "/tmp/temp.txt", "this should not be allowed")
         print(res)
         self.assertTrue("Error: Cannot write to" in res)
+
+    def test_rmain(self):
+        res = run_python_file("calculator", "main.py")
+        print(res)
+        self.assertTrue("Calculator App\nUsage: python main.py" in res)
+
+    def test_rtest(self):
+        res = run_python_file("calculator", "tests.py")
+        print(res)
+        self.assertTrue(".......")
+
+    def test_rout(self):
+        res = run_python_file("calculator", "../main.py")
+        print(res)
+        self.assertTrue("Error: Cannot execute" in res)
+
+    def test_rnofile(self):
+        res = run_python_file("calculator", "nonexistent.py")
+        print(res)
+        self.assertTrue("Error: File " in res)
 
 
 if __name__ == "__main__":
